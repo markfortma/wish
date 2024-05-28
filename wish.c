@@ -8,6 +8,12 @@
  *
  */
 
+// built-in commands: exit, cd, and path
+// - path overwrites PATH
+// default PATH=/bin
+// redirection to file also includes stderr
+// allow background processes (&)
+
 #include<stdio.h>
 #include<stdlib.h>
 #include<unistd.h>
