@@ -1,6 +1,6 @@
 # wish
 
-A rudimentary Linux shell for learning purposes.
+"wisconsin shell" - A rudimentary Linux shell for learning purposes.
 
 # Author
 
