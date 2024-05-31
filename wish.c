@@ -19,7 +19,21 @@
 #include<string.h>
 #include<unistd.h>
 
-int wish_path_update(){
+#define MAX_PATH_COUNT 16
+static
+char *paths[MAX_PATH_COUNT] = {
+  "/bin"
+};
+
+static
+int paths_count = 1;
+
+int wish_path_update(char *path_list[], size_t path_count){
+  int i = 0;
+  for(; i < path_count && i < paths_count; i++)
+    paths[i] = path_list[i];
+  paths_count = i;
+  return i;
 }
 
 int wish_chdir(char *path){
