@@ -1,3 +1,5 @@
+CFLAGS ?= -Wall -Werror -O3
+
 wish: wish.c
 	$(CC) $(CFLAGS) $(CLIBS) $(CINCS) -o $@ $^
 

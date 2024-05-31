@@ -16,18 +16,20 @@
 
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 #include<unistd.h>
 
-#define MAX_PATH_SIZE 16
-static
-char *path[MAX_PATH_SIZE] = {
-  "/bin"
-};
+int wish_path_update(){
+}
 
-static
-int path_count = 1;
+int wish_chdir(char *path){
+  if(access(path, F_OK)){
+    return chdir(path);
+  }
+  return -1;
+}
 
-void lsh_execute(FILE *in){
+void wish_execute(FILE *in){
   char *line = NULL;
   size_t linelen = 0;
   ssize_t nbytes = 0;
@@ -40,7 +42,8 @@ void lsh_execute(FILE *in){
     if(0 == nbytes) break;
     // skip on comment lines
     if('#' == line[0]) continue;
-
+    // exit loop on exit
+    if(strcmp("exit\n", line) == 0) break;
     
   }
   /* release the line buffer */
@@ -50,12 +53,12 @@ void lsh_execute(FILE *in){
 int main(int argc, char *argv[]){
   if(2 == argc){
     FILE *in = fopen(argv[1], "r");
-    lsh_execute(in);
+    wish_execute(in);
     fclose(in);
   } else if(1 == argc){
-    lsh_execute(stdin);
+    wish_execute(stdin);
   } else {
-    fprintf(stderr, "Usage: %s [script.sh]\n");
+    fprintf(stderr, "Usage: %s [script.sh]\n", argv[0]);
     return EXIT_FAILURE;
   }
   return EXIT_SUCCESS;
