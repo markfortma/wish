@@ -18,6 +18,35 @@
 #include<stdlib.h>
 #include<unistd.h>
 
+static
+char *PATH[] = {
+  "/bin"
+};
+
+void wish_execute(FILE *script){
+  char *line;
+  size_t linelen;
+  ssize_t nbytes;
+  while(!feof(script)){
+    nbytes = getline(&line, &linelen, script);
+    if(line[0] == '#'){
+      /* skip lines that start with # */
+      continue;
+    }
+    
+  } 
+}
+
 int main(int argc, char *argv[]){
+  if(2 == argc){
+      FILE *in = fopen(argv[1], "r");
+      wish_execute(in);
+      fclose(in);
+  } else if(1 == argc){
+    wish_execute(stdin);
+  }
+  else{
+      fprintf(stderr, "Usage: %s script.sh\n", argv[0]);
+  }
     return EXIT_SUCCESS;
 }
