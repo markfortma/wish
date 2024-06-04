@@ -31,7 +31,7 @@ int paths_count = 1;
 int wish_path_update(char *path_list[], size_t path_count){
   int i = 0;
   for(; i < path_count && i < paths_count; i++)
-    paths[i] = path_list[i];
+    strncpy(paths[i], path_list[i], strlen(path_list[i]));
   paths_count = i;
   return i;
 }
