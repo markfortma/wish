@@ -45,6 +45,7 @@ int wish_path(char *line){
   for(; (token = strsep(&line, DELIMITERS));){
     size_t length = strlen(token);
     strncpy(paths[count], token, length);
+    // ensure NULL terminated
     paths[count][length] = '\0';
     count++;
   }
