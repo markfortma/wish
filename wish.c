@@ -42,7 +42,7 @@ int wish_chdir(char *path){
 int wish_path(char *line){
   char *token = NULL;
   unsigned int count = 0;
-  for(; (token = strsep(&line, DELIMITERS));){
+  for(; (token = strtok(NULL, DELIMITERS));){
     size_t length = strlen(token);
     strncpy(paths[count], token, length);
     // ensure NULL terminated
@@ -68,18 +68,23 @@ void wish_execute(FILE *in){
     // skip on comment lines
     if('#' == line[0]) continue;
     // exit loop on exit
-    if(strcmp("exit\n", line) == 0) break;
+    if(strcmp(line, "exit\n") == 0) break;
 
-    token = strsep(&line, DELIMITERS);
+    token = strtok(line, DELIMITERS);
     if(strcmp(token, "cd") == 0) {
-      token = strsep(&line, DELIMITERS);
+      // handle cd (change directory) command
+      token = strtok(NULL, DELIMITERS);
       wish_chdir(token);
     } else if(strcmp(token, "path") == 0){
+      // handle path command
       wish_path(line);
+    } else {
+      // handle exterior commands
+      ;
     }
   }
   /* release the line buffer */
-  free(line);
+  if(line) free(line);
 }
 
 int main(int argc, char *argv[]){
