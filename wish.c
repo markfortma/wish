@@ -19,22 +19,18 @@
 #include<string.h>
 #include<unistd.h>
 
+#define MAX_PATH_LENGTH 256
 #define MAX_PATH_COUNT 16
+/* whitespace tokens */
+#define DELIMITERS " \t\r\n"
+
 static
-char *paths[MAX_PATH_COUNT] = {
+char paths[MAX_PATH_LENGTH][MAX_PATH_COUNT] = {
   "/bin"
 };
 
 static
 int paths_count = 1;
-
-int wish_path_update(char *path_list[], size_t path_count){
-  int i = 0;
-  for(; i < path_count && i < paths_count; i++)
-    strncpy(paths[i], path_list[i], strlen(path_list[i]));
-  paths_count = i;
-  return i;
-}
 
 int wish_chdir(char *path){
   if(access(path, F_OK)){
@@ -43,11 +39,25 @@ int wish_chdir(char *path){
   return -1;
 }
 
+int wish_path(char *line){
+  char *token = NULL;
+  unsigned int count = 0;
+  for(; (token = strsep(&line, DELIMITERS));){
+    size_t length = strlen(token);
+    strncpy(paths[count], token, length);
+    paths[count][length] = '\0';
+    count++;
+  }
+  paths_count = count;
+  return count;
+}
+
 void wish_execute(FILE *in){
   char *line = NULL;
   size_t linelen = 0;
   ssize_t nbytes = 0;
   while(!feof(in)){
+    char *token;
     if(in == stdin)
       printf("wish> ");
     nbytes = getline(&line, &linelen, in);
@@ -58,7 +68,14 @@ void wish_execute(FILE *in){
     if('#' == line[0]) continue;
     // exit loop on exit
     if(strcmp("exit\n", line) == 0) break;
-    
+
+    token = strsep(&line, DELIMITERS);
+    if(strcmp(token, "cd") == 0) {
+      token = strsep(&line, DELIMITERS);
+      wish_chdir(token);
+    } else if(strcmp(token, "path") == 0){
+      wish_path(line);
+    }
   }
   /* release the line buffer */
   free(line);
