@@ -42,7 +42,7 @@ int wish_chdir(char *path){
 int wish_path(char *line){
   char *token = NULL;
   unsigned int count = 0;
-  for(; (token = strtok(NULL, DELIMITERS));){
+  while((token = strtok(NULL, DELIMITERS))){
     size_t length = strlen(token);
     strncpy(paths[count], token, length);
     // ensure NULL terminated
