@@ -17,6 +17,7 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<string.h>
+#include<sys/wait.h>
 #include<unistd.h>
 
 #define MAX_PATH_LENGTH 256
@@ -25,19 +26,12 @@
 #define DELIMITERS " \t\r\n"
 
 static
-char paths[MAX_PATH_LENGTH][MAX_PATH_COUNT] = {
+char paths[MAX_PATH_COUNT][MAX_PATH_LENGTH] = {
   "/bin"
 };
 
 static
 int paths_count = 1;
-
-int wish_chdir(char *path){
-  if(access(path, F_OK)){
-    return chdir(path);
-  }
-  return -1;
-}
 
 int wish_path(char *line){
   char *token = NULL;
@@ -51,6 +45,58 @@ int wish_path(char *line){
   }
   paths_count = count;
   return count;
+}
+
+void wish_resolve(char *command, char *resolved){
+  char path[256];
+  memset(path, 0, sizeof(path));
+  for(size_t index = 0; index < paths_count; index++){
+    strcat(path, paths[index]);
+    strcat(path, "/");
+    strcat(path, command);
+    if(access(path, X_OK)){
+      // if the executable exists, then exit iteration
+      strncpy(resolved, path, strlen(path));
+    }
+    // reset the buffer
+    memset(path, 0, sizeof(path));
+  }
+}
+
+void wish_mkargs(char *args){
+  char *token = NULL;
+  size_t length = 0;
+  while((token = strtok(NULL, DELIMITERS))){
+    strcat(args, token);
+    strcat(args, " ");
+  }
+  // remove blank from end
+  length = strlen(args);
+  args[length - 1] = '\0';
+}
+
+int wish_launch(char *bin, char *args){
+  pid_t pid, wpid;
+  int status;
+
+  pid = fork();
+  if (pid == 0) {
+    // Child process
+    if (execvp(bin, &args) == -1) {
+      perror("wish");
+    }
+    exit(EXIT_FAILURE);
+  } else if (pid < 0) {
+    // Error forking
+    perror("wish");
+  } else {
+    // Parent process
+    do {
+      wpid = waitpid(pid, &status, WUNTRACED);
+    } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+  }
+
+  return 1;
 }
 
 void wish_execute(FILE *in){
@@ -74,13 +120,20 @@ void wish_execute(FILE *in){
     if(strcmp(token, "cd") == 0) {
       // handle cd (change directory) command
       token = strtok(NULL, DELIMITERS);
-      wish_chdir(token);
+      chdir(token);
     } else if(strcmp(token, "path") == 0){
       // handle path command
       wish_path(line);
     } else {
       // handle exterior commands
-      ;
+      char bin[256], args[256];
+      memset(bin, 0, sizeof(bin));
+      memset(args, 0, sizeof(args));
+      wish_resolve(token, bin);
+      wish_mkargs(args);
+      if(strlen(bin) > 0 && strlen(args) > 0){
+	wish_launch(bin, args);
+      }
     }
   }
   /* release the line buffer */
