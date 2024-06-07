@@ -47,17 +47,13 @@ int wish_path(char *line){
   return count;
 }
 
-void wish_resolve(char *command, char *resolved){
-  char path[256];
-  memset(path, 0, sizeof(path));
+void wish_resolve(char *command, char *path){
   for(size_t index = 0; index < paths_count; index++){
     strcat(path, paths[index]);
     strcat(path, "/");
     strcat(path, command);
-    if(access(path, X_OK)){
-      // if the executable exists, then exit iteration
-      strncpy(resolved, path, strlen(path));
-    }
+    // exit loop once a path has been found
+    if(0 == access(path, X_OK)) break;
     // reset the buffer
     memset(path, 0, sizeof(path));
   }
@@ -65,24 +61,16 @@ void wish_resolve(char *command, char *resolved){
 
 void wish_mkargs(char *args){
   char *token = NULL;
-  size_t length = 0;
-  while((token = strtok(NULL, DELIMITERS))){
-    strcat(args, token);
-    strcat(args, " ");
-  }
-  // remove blank from end
-  length = strlen(args);
-  args[length - 1] = '\0';
 }
 
-int wish_launch(char *bin, char *args){
+int wish_launch(char *bin, char *args[]){
   pid_t pid, wpid;
   int status;
 
   pid = fork();
   if (pid == 0) {
     // Child process
-    if (execvp(bin, &args) == -1) {
+    if (execv(bin, args) == -1) {
       perror("wish");
     }
     exit(EXIT_FAILURE);
@@ -126,14 +114,9 @@ void wish_execute(FILE *in){
       wish_path(line);
     } else {
       // handle exterior commands
-      char bin[256], args[256];
+      char bin[MAX_PATH_LENGTH], args[MAX_PATH_LENGTH];
       memset(bin, 0, sizeof(bin));
       memset(args, 0, sizeof(args));
-      wish_resolve(token, bin);
-      wish_mkargs(args);
-      if(strlen(bin) > 0 && strlen(args) > 0){
-	wish_launch(bin, args);
-      }
     }
   }
   /* release the line buffer */
