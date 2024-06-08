@@ -33,6 +33,10 @@ char paths[MAX_PATH_COUNT][MAX_PATH_LENGTH] = {
 static
 int paths_count = 1;
 
+/*
+ * Update PATH for this shell to perform lookups in
+ * each directory for the binary provided by the user
+ */
 int wish_path(char *line){
   char *token = NULL;
   unsigned int count = 0;
@@ -47,6 +51,10 @@ int wish_path(char *line){
   return count;
 }
 
+/*
+ * Using PATH, find the executable supplied by the user
+ * update its absolute path via *path
+ */
 void wish_resolve(char *command, char *path){
   for(size_t index = 0; index < paths_count; index++){
     strcat(path, paths[index]);
@@ -59,18 +67,36 @@ void wish_resolve(char *command, char *path){
   }
 }
 
-void wish_mkargs(char *args){
+/*
+ * Build the command and arguments to prepare for execution
+ */
+int wish_mkargs(char *bin, char *mkargs[]){
   char *token = NULL;
+  int tcount = 0;
+  mkargs[tcount++] = bin;
+  while((token = strtok(NULL, DELIMITERS))){
+    mkargs[tcount++] = token;
+  }
+  mkargs[tcount] = NULL;
+  return tcount;
 }
 
-int wish_launch(char *bin, char *args[]){
+
+/*
+ * Fork a new process to complete subordinate execution
+ * of command and args
+ */
+int wish_launch(char *args[]){
+  // this function is a copy from
+  // https://brennan.io/2015/01/16/write-a-shell-in-c/
+  // updated where necessary for this project
   pid_t pid, wpid;
   int status;
 
   pid = fork();
   if (pid == 0) {
     // Child process
-    if (execv(bin, args) == -1) {
+    if (execv(args[0], args) == -1) {
       perror("wish");
     }
     exit(EXIT_FAILURE);
@@ -87,6 +113,10 @@ int wish_launch(char *bin, char *args[]){
   return 1;
 }
 
+/*
+ * This is the REPL of this program
+ * REPL means (R)ead, (E)xecute, (P)rint, (L)oop
+ */
 void wish_execute(FILE *in){
   char *line = NULL;
   size_t linelen = 0;
@@ -114,9 +144,14 @@ void wish_execute(FILE *in){
       wish_path(line);
     } else {
       // handle exterior commands
-      char bin[MAX_PATH_LENGTH], args[MAX_PATH_LENGTH];
+      char bin[MAX_PATH_LENGTH], *args[MAX_PATH_LENGTH];
       memset(bin, 0, sizeof(bin));
       memset(args, 0, sizeof(args));
+      wish_resolve(token, bin);
+      size_t count = wish_mkargs(bin, args);
+      if(strlen(bin) > 0 && count > 0){
+	wish_launch(args);
+      }
     }
   }
   /* release the line buffer */
