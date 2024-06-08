@@ -55,16 +55,18 @@ int wish_path(char *line){
  * Using PATH, find the executable supplied by the user
  * update its absolute path via *path
  */
-void wish_resolve(char *command, char *path){
+int wish_resolve(char *command, char *path){
+  int status = -1;
   for(size_t index = 0; index < paths_count; index++){
     strcat(path, paths[index]);
     strcat(path, "/");
     strcat(path, command);
     // exit loop once a path has been found
-    if(0 == access(path, X_OK)) break;
+    if(0 == access(path, X_OK)) return 0;
     // reset the buffer
     memset(path, 0, sizeof(path));
   }
+  return status;
 }
 
 /*
@@ -90,7 +92,7 @@ int wish_launch(char *args[]){
   // this function is a copy from
   // https://brennan.io/2015/01/16/write-a-shell-in-c/
   // updated where necessary for this project
-  pid_t pid, wpid;
+  pid_t pid, cpid;
   int status;
 
   pid = fork();
@@ -106,7 +108,8 @@ int wish_launch(char *args[]){
   } else {
     // Parent process
     do {
-      wpid = waitpid(pid, &status, WUNTRACED);
+      // wait for child pid to exit
+      cpid = waitpid(pid, &status, WUNTRACED);
     } while (!WIFEXITED(status) && !WIFSIGNALED(status));
   }
 
@@ -147,7 +150,11 @@ void wish_execute(FILE *in){
       char bin[MAX_PATH_LENGTH], *args[MAX_PATH_LENGTH];
       memset(bin, 0, sizeof(bin));
       memset(args, 0, sizeof(args));
-      wish_resolve(token, bin);
+      if(wish_resolve(token, bin) != 0) {
+	// report failure to find and continue while loop
+	fprintf(stderr, "command: %s not found\n", token);
+	continue;
+      }
       size_t count = wish_mkargs(bin, args);
       if(strlen(bin) > 0 && count > 0){
 	wish_launch(args);
