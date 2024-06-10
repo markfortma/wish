@@ -37,6 +37,7 @@ int paths_count = 1;
 static
 char *redirect = NULL;
 
+static 
 enum redirect_method {
   NONSPEC,
   WRITE,
