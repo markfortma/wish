@@ -33,6 +33,15 @@ char paths[MAX_PATH_COUNT][MAX_PATH_LENGTH] = {
 static
 int paths_count = 1;
 
+void wish_usage(){
+  printf("Usage: wish [script.sh]\n");
+  printf("Interactive Mode:\n\n");
+  printf("wish> help          - This usage message\n");
+  printf("wish> exit          - Exit the prompt\n");
+  printf("wish> cd path/to/   - Change the directory to path/to/\n");
+  printf("wish> path /bin ... - Update PATHs to search for binary files\n");
+}
+
 /*
  * Update PATH for this shell to perform lookups in
  * each directory for the binary provided by the user
@@ -136,6 +145,10 @@ void wish_execute(FILE *in){
     if('#' == line[0]) continue;
     // exit loop on exit
     if(strcmp(line, "exit\n") == 0) break;
+    if(strcmp(line, "help\n") == 0) {
+      wish_usage();
+      continue;
+    }
 
     token = strtok(line, DELIMITERS);
     if(strcmp(token, "cd") == 0) {
