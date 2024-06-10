@@ -18,6 +18,7 @@
 #include<stdlib.h>
 #include<string.h>
 #include<sys/wait.h>
+#include<fcntl.h>
 #include<unistd.h>
 
 #define MAX_PATH_LENGTH 256
@@ -32,6 +33,18 @@ char paths[MAX_PATH_COUNT][MAX_PATH_LENGTH] = {
 
 static
 int paths_count = 1;
+
+static
+char *redirect = NULL;
+
+enum redirect_method {
+  NONSPEC,
+  WRITE,
+  APPEND,
+  READ
+};
+
+static int method = NONSPEC;
 
 void wish_usage(){
   printf("Usage: wish [script.sh]\n");
@@ -86,7 +99,19 @@ int wish_mkargs(char *bin, char *mkargs[]){
   int tcount = 0;
   mkargs[tcount++] = bin;
   while((token = strtok(NULL, DELIMITERS))){
-    mkargs[tcount++] = token;
+    if(strcmp(token, ">") == 0) {
+      method = WRITE;
+      redirect = strtok(NULL, DELIMITERS);
+    } else if(strcmp(token, ">>") == 0){
+      method = APPEND;
+      // get the destination from the next arg
+      redirect = strtok(NULL, DELIMITERS);
+    } else if(strcmp(token, "<") == 0){
+      method = READ;
+      redirect = strtok(NULL, DELIMITERS);
+    } else {
+      mkargs[tcount++] = token;
+    }
   }
   mkargs[tcount] = NULL;
   return tcount;
@@ -106,6 +131,22 @@ int wish_launch(char *args[]){
 
   pid = fork();
   if (pid == 0) {
+    if(method == WRITE){
+      int out = creat(redirect, 0644); // create new output file
+      dup2(out, STDOUT_FILENO);       // redirect stdout to file
+      close(out);                     // close after usere
+    } else if(method == APPEND){
+      int append = open(redirect, O_CREAT | O_RDWR | O_APPEND, 0644);
+      dup2(append, STDOUT_FILENO);
+      close(append);
+    } else if(method == READ){
+      int in;
+      if ((in = open(redirect, O_RDONLY)) < 0) {   // open file for reading
+	fprintf(stderr, "error opening file\n");
+      }
+      dup2(in, STDIN_FILENO);         // duplicate stdin to input file
+      close(in);                      // close after use
+    }
     // Child process
     if (execv(args[0], args) == -1) {
       perror("wish");
@@ -142,7 +183,8 @@ void wish_execute(FILE *in){
     // exit while if no bytes read
     if(0 == nbytes) break;
     // skip on comment lines
-    if('#' == line[0]) continue;
+    if('#' == line[0] ||
+       '\n' == line[0]) continue;
     // exit loop on exit
     if(strcmp(line, "exit\n") == 0) break;
     if(strcmp(line, "help\n") == 0) {
