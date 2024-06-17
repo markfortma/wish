@@ -147,7 +147,8 @@ int wish_launch(char *args[]){
       }
       dup2(in, STDIN_FILENO);         // duplicate stdin to input file
       close(in);                      // close after use
-    }
+   }
+    method = NONSPEC;
     // Child process
     if (execv(args[0], args) == -1) {
       perror("wish");
