@@ -147,7 +147,7 @@ int wish_launch(char *args[]){
       }
       dup2(in, STDIN_FILENO);         // duplicate stdin to input file
       close(in);                      // close after use
-   }
+    }
     method = NONSPEC;
     // Child process
     if (execv(args[0], args) == -1) {
@@ -198,7 +198,8 @@ void wish_execute(FILE *in){
     if(strcmp(token, "cd") == 0) {
       // handle cd (change directory) command
       token = strtok(NULL, DELIMITERS);
-      chdir(token);
+      if(0 != chdir(token))
+	fprintf(stderr, "%s not found\n", token);
     } else if(strcmp(token, "path") == 0){
       // handle path command
       wish_path(line);
