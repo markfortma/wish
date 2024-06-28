@@ -47,6 +47,8 @@ enum redirect_method {
 
 static int method = NONSPEC;
 
+static char prompt[] = "wish> ";
+
 void wish_usage(){
   printf("Usage: wish [script.sh]\n");
   printf("Interactive Mode:\n\n");
@@ -179,7 +181,7 @@ void wish_execute(FILE *in){
   while(!feof(in)){
     char *token;
     if(in == stdin)
-      printf("wish> ");
+      printf(prompt);
     nbytes = getline(&line, &linelen, in);
 
     // exit while if no bytes read
